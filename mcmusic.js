@@ -6,9 +6,7 @@ const fs = require('fs');
 const { Video } = require('simple-youtube-api');
 const prefix = '!';
 bot.commands = new Discord.Collection();
-
 const youtube = new YouTube(process.env.YT_API_KEY);
-
 const queue = new Map();
 
 fs.readdir("./command/", (err, files) => {
