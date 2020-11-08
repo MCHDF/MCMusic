@@ -45,7 +45,11 @@ bot.on('message', async message => {
       try {
         var videos = await youtube.searchVideos(searchString, 5);
         var index = 0;
-        message.channel.send(`:mag_right: \`${searchString}\` **검색 결과**\n${videos.map(video2 => `\`${++index}\` **${video2.title}**`).join('\n')}\n:stopwatch: 재생할 곡의 번호를 전송해주세요!`);
+        let embed = new Discord.MessageEmbed()
+        .setTitle(`:mag_right: \`${searchString}\` **검색 결과**`)
+        .setDescription(`${videos.map(video2 => `\`${++index}\` **${video2.title}**`).join('\n')}\n\n:stopwatch: 재생할 곡의 번호를 전송해주세요!`)
+        message.channel.send(embed);
+        // message.channel.send(`:mag_right: \`${searchString}\` **검색 결과**\n${videos.map(video2 => `\`${++index}\` **${video2.title}**`).join('\n')}\n:stopwatch: 재생할 곡의 번호를 전송해주세요!`);
         try {
           var responce = await message.channel.awaitMessages(msg => msg.content > 0 && msg.content < 11, {
             max: 1,
@@ -53,7 +57,7 @@ bot.on('message', async message => {
             errors: ['time']
           })
         } catch {
-          message.channel.send(':stopwatch: **시간 초과!**').then(m => m.delete({ timeout: 3000 }));
+          return message.channel.send(':stopwatch: **시간 초과!**').then(m => m.delete({ timeout: 3000 }));
         }
         const videoIndex = parseInt(responce.first().content);
         var video = await youtube.getVideoByID(videos[videoIndex - 1].id)
@@ -76,7 +80,7 @@ bot.on('message', async message => {
         voiceChannel: voiceChannel,
         connection: null,
         songs: [],
-        volume: 5,
+        volume: 3,
         playing: true
       }
       queue.set(message.guild.id, queueConst);
@@ -87,7 +91,7 @@ bot.on('message', async message => {
         var connection = await voiceChannel.join();
         queueConst.connection = connection;
         play(message.guild, queueConst.songs[0]);
-        message.channel.send(`:arrow_forward: **${song.title}**의 재생을 시작합니다!`)
+        message.channel.send(`:arrow_forward: \`\`${mmss(song.length)}\`\` **${song.title}** 의 재생을 시작합니다!`)
       } catch (error) {
         console.log(`:no_entry_sign: 음성 채널에 입장하는데 문제가 생겼어요! 오류 내용을 개발자에게 알려주세요!\n오류 내용 \`${error}\``);
         queue.delete(message.guild.id);
@@ -96,7 +100,7 @@ bot.on('message', async message => {
 
     } else {
       serverQueue.songs.push(song);
-      return message.channel.send(`:notepad_spiral: \`${song.title}\`이(가) 재생목록에 추가되었습니다!`);
+      return message.channel.send(`:notepad_spiral: \`\`${mmss(song.length)}\`\` \`${song.title}\`이(가) 재생목록에 추가되었습니다!`);
     }
     return undefined;
 // ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -153,16 +157,16 @@ bot.on('message', async message => {
         var connection = await voiceChannel.join();
         queueConst.connection = connection;
         play(message.guild, queueConst.songs[0]);
-        message.channel.send(`:arrow_forward: \`${song.title}\`의 재생을 시작합니다!`)
+        message.channel.send(`:arrow_forward: \`\`${mmss(song.length)}\`\` \`${song.title}\`의 재생을 시작합니다!`)
       } catch (error) {
-        console.log(`:no_entry_sign: 음성 채널에 입장하는데 문제가 생겼어요! 오류 내용을 개발자에게 알려주세요!\n오류 내용 \`${error}\``);
+        console.log(`음악봇에 오류가 생겼어요!\n오류 내용 \`${error}\``);
         queue.delete(message.guild.id);
         return message.channel.send(`:no_entry_sign: 음성 채널에 입장하는데 문제가 생겼어요! 오류 내용을 개발자에게 알려주세요!\n오류 내용 \`${error}\``);
       }
 
     } else {
       serverQueue.songs.push(song);
-      return message.channel.send(`:notepad_spiral: \`${song.title}\`이(가) 재생목록에 추가되었습니다!`);
+      return message.channel.send(`:notepad_spiral: \`\`${mmss(song.length)}\`\` \`${song.title}\`이(가) 재생목록에 추가되었습니다!`);
     }
     return undefined;
 // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -178,8 +182,7 @@ bot.on('message', async message => {
     }
     serverQueue.songs = [];
     serverQueue.connection.dispatcher.end();
-    message.channel.send(':stop_button: **모든 음악을 중지합니다!**');
-    return undefined;
+    return message.channel.send(':stop_button: **모든 음악을 중지합니다!**');
 // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
   } else if (message.content.startsWith(`${prefix}skip`)) { // 곡 스킵 명령어
     if (!serverQueue) {
@@ -196,7 +199,10 @@ bot.on('message', async message => {
       return message.channel.send(':bulb: 재생목록에 제가 부를 노래가 없는것 같아요...');
     }
     let index = 0;
-    message.channel.send(`:notepad_spiral: __**재생목록**__\n${serverQueue.songs.map(song => `**${++index}** \`\`${mmss(song.length)}\`\` ${song.title} **${song.addUser}** `).join('\n')}`, '\n');
+    let embed = new Discord.MessageEmbed()
+    .setTitle(`:notepad_spiral: __**재생목록**__`)
+    .setDescription(`${serverQueue.songs.map(song => `**${++index}** \`\`${mmss(song.length)}\`\` ${song.title} **${song.addUser}**`).join('\n')}`)
+    message.channel.send(embed);
     return undefined;
 // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
   } else if (message.content.startsWith(prefix + 'np')) { // 현재 재생중인 곡 표시 명령어
@@ -211,16 +217,21 @@ bot.on('message', async message => {
       return message.channel.send(':mute: 저는 지금 어떠한 노래도 부르고 있지않아요...');
     }
     if (!message.member.voice.channel) {
-      return message.channel.send(':no_entry_sign: 음악을 건너뛰기 위해서 음악이 재생되고있는 채널에 접속해주세요!');
+      return message.channel.send(':no_entry_sign: 볼륨을 조절하기 위해서 음악이 재생되고있는 채널에 접속해주세요!');
     }
     if(!args[1]) {
-      return message.channel.send(`현재 볼륨은 \`${serverQueue.volume}\` 입니다!`);
+      const volume = serverQueue.volume;
+      const volumeLevel = "⬜".repeat(volume) + "⬛".repeat(10 - volume);
+      let embed = new Discord.MessageEmbed()
+      .setTitle('**Volume**')
+      .setDescription(`🔈 ${volumeLevel} 🔊`)
+      return message.channel.send(embed);
     }
     if(parseInt(args[1]) >= 11) {
       return message.channel.send('설정 가능한 볼륨은 \`0 ~ 10\` 까지입니다!');
     } else {
       serverQueue.volume = args[1];
-      serverQueue.connection.dispatcher.setVolumeLogarithmic(args[1] / 5);
+      serverQueue.connection.dispatcher.setVolumeLogarithmic(args[1] / 10);
       return message.channel.send(`현재 볼륨을 \`${serverQueue.volume}\` 으로 변경하였습니다!!`);
     }
   }
@@ -231,18 +242,27 @@ bot.on('message', async message => {
       .setColor("#FFE4E4")
       .setAuthor("MCBOT", "https://i.imgur.com/Togof5u.png")
       .setThumbnail("https://i.imgur.com/Togof5u.png")
-      .setDescription('모든 명령어는 ' + prefix + ' 를 붙여 사용합니다.')
+      .setDescription('모든 명령어는 ' + prefix + ' 를 붙여 사용합니다.\n모든 음악과 검색 결과는 YouTube를 기준으로 사용됩니다!')
       .addField("play", "```입력하신 곡(링크)의 재생을 시작합니다!\n사용법 : " + prefix + "play <곡|URL>```")
       .addField("search", "```음악을 검색합니다!\n사용법 : " + prefix + "search <곡>```")
       .addField("list", "```현재 재생중인 목록을 표시합니다!\n사용법 : " + prefix + "list```")
       .addField("np", "```현재 재생중인 곡을 표시합니다.\n사용법 : " + prefix + "np```")
       .addField("volume", "```음악의 볼륨을 설정 합니다!(0 ~ 10)\n사용법 : " + prefix + "volume\n기본값 : 5```")
       .addField("stop", "```모든 곡을 중단시켜요!\n관리자 권한이 필요해요!\n사용법 : " + prefix + "stop```")
-      .setFooter(`Request by ${message.author.tag} • 문의 : MCHDF#9999`);
-    return message.channel.send(embed);
+      .setFooter(`Request by ${message.author.tag} • 문의 : MCHDF#9999\nYouTube API & ytdl`);
+      message.react('🔊');
+    return message.reply(embed);
+  }
+
+  if(message.content.startsWith(prefix + 'mreload')) {
+    if(message.author.id != '468781931182555136') {
+      return;
+    } else {
+      process.exit();
+    }
   }
 });
-
+// ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 function play(guild, song) {
   const serverQueue = queue.get(guild.id);
 
@@ -259,7 +279,7 @@ function play(guild, song) {
     .on('error', error => {
       console.log(error)
     })
-  dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
+  dispatcher.setVolumeLogarithmic(serverQueue.volume / 10);
 }
 
 function mmss(i) {
