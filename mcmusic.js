@@ -251,7 +251,7 @@ bot.on('message', async message => {
       .addField("stop", "```모든 곡을 중단시켜요!\n관리자 권한이 필요해요!\n사용법 : " + prefix + "stop```")
       .setFooter(`Request by ${message.author.tag} • 문의 : MCHDF#9999\nYouTube API & ytdl`);
       message.react('🔊');
-    return message.reply(embed);
+    return message.channel.send(embed);
   }
 
   if(message.content.startsWith(prefix + 'mreload')) {
