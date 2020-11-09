@@ -1,0 +1,26 @@
+{
+  "name": "mcmusic",
+  "version": "1.0.0",
+  "description": "Discord js Music Bot",
+  "main": "mcmusic.js",
+  "dependencies": {
+    "discord.js": "^12.2.0",
+    "opusscript": "^0.0.7",
+    "simple-youtube-api": "^5.2.1",
+    "ytdl-core": "^4.0.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "node mcmusic.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MCHDF/MCMusic.git"
+  },
+  "author": "MCHDF",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/MCHDF/MCMusic/issues"
+  },
+  "homepage": "https://github.com/MCHDF/MCMusic#readme"
+}
