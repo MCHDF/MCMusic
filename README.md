@@ -2,9 +2,9 @@
 
 Discord.js BOT
 
-0. discord js : v12.4.1
-1. Language : JavaScript
-2. IDE : VSCode
+- discord js : v12.4.1
+- Language : JavaScript
+- IDE : VSCode
 
 ## 봇 명령어
 
