@@ -64,6 +64,12 @@ bot.on('message', async message => {
       try {
         var videos = await youtube.searchVideos(searchString, 5);
         var index = 0;
+        if(!searchString) {
+          let embed = new Discord.MessageEmbed()
+          .setTitle(`:mag_right: \`${searchString}\` **검색 결과**`)
+          .setDescription('검색하신 음악을 찾을 수 없어요....');
+        return message.channel.send(embed);
+        }
         let embed = new Discord.MessageEmbed()
           .setTitle(`:mag_right: \`${searchString}\` **검색 결과**`)
           .setDescription(`${videos.map(video2 => `\`${++index}\` **${video2.title}**`).join('\n')}\n\n:stopwatch: 재생할 곡의 번호를 전송해주세요!`)
@@ -165,7 +171,7 @@ bot.on('message', async message => {
         voiceChannel: voiceChannel,
         connection: null,
         songs: [],
-        volume: 5,
+        volume: 3,
         playing: true
       }
       queue.set(message.guild.id, queueConst);
@@ -251,7 +257,12 @@ bot.on('message', async message => {
     } else {
       serverQueue.volume = args[1];
       serverQueue.connection.dispatcher.setVolumeLogarithmic(args[1] / 10);
-      return message.channel.send(`현재 볼륨을 \`${serverQueue.volume}\` 으로 변경하였습니다!!`);
+      const volume = serverQueue.volume;
+      const volumeLevel = "⬜".repeat(volume) + "⬛".repeat(10 - volume);
+      let embed = new Discord.MessageEmbed()
+      .setTitle('**Volume**')
+      .setDescription(`🔈 ${volumeLevel} 🔊`)
+      return message.channel.send(embed);
     }
   }
   // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
