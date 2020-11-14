@@ -5,6 +5,7 @@
   "main": "mcmusic.js",
   "dependencies": {
     "discord.js": "^12.2.0",
+    "inko": "^1.1.1",
     "opusscript": "^0.0.7",
     "simple-youtube-api": "^5.2.1",
     "ytdl-core": "^4.0.3"
