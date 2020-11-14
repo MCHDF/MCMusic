@@ -2,8 +2,8 @@ const Discord = require('discord.js');
 const bot = new Discord.Client();
 const ytdl = require('ytdl-core');
 const YouTube = require('simple-youtube-api');
-const prefix = '!';
 bot.commands = new Discord.Collection();
+const prefix = '!'
 const youtube = new YouTube(process.env.YT_API_KEY);
 const queue = new Map();
 
@@ -12,15 +12,35 @@ bot.on('ready', () => {
 });
 
 bot.on('message', async message => {
+  if (message.author.bot) {
+    return;
+  }
+
+  if (message.content.startsWith(prefix + "mhelp")) { // 음악 봇 명령어 도움말
+    let embed = new Discord.MessageEmbed()
+      .setTitle("**명령어 도움말**")
+      .setColor("#FFE4E4")
+      .setAuthor("MCBOT", "https://i.imgur.com/Togof5u.png")
+      .setThumbnail("https://i.imgur.com/Togof5u.png")
+      .setDescription('모든 명령어는 ' + prefix + ' 를 붙여 사용합니다.\n모든 음악과 검색 결과는 YouTube를 기준으로 사용됩니다!')
+      .addField("play", "```입력하신 곡(링크)의 재생을 시작합니다!\n사용법 : " + prefix + "play <곡|URL>```")
+      .addField("search", "```음악을 검색합니다!\n사용법 : " + prefix + "search <곡>```")
+      .addField("list", "```현재 재생중인 목록을 표시합니다!\n사용법 : " + prefix + "list```")
+      .addField("np", "```현재 재생중인 곡을 표시합니다.\n사용법 : " + prefix + "np```")
+      .addField("volume", "```음악의 볼륨을 설정 합니다!(0 ~ 10)\n사용법 : " + prefix + "volume\n기본값 : 5```")
+      .addField("stop", "```모든 곡을 중단시켜요!\n관리자 권한이 필요해요!\n사용법 : " + prefix + "stop```")
+      .setFooter(`Request by ${message.author.tag} • 문의 : MCHDF#9999\nYouTube API & ytdl`);
+      message.fetch(message.id).then(m => {
+        m.react("🎵");
+    });
+    return message.author.send(embed);
+  }
 
   let args = message.content.substring(prefix.length).split(' ');
   let serverQueue = queue.get(message.guild.id);
   let searchString = args.slice(1).join(' ');
   let url = args[1] ? args[1].replace(/<(.+)>/g, '$1') : '';
 
-  if (message.author.bot) {
-    return;
-  }
 // ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
   if (message.content.startsWith(`${prefix}search`)) { // 검색 명령어
     if (!args[1]) {
@@ -236,23 +256,6 @@ bot.on('message', async message => {
     }
   }
 // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  if (message.content.startsWith(prefix + "mhelp")) { // 음악 봇 명령어 도움말
-    let embed = new Discord.MessageEmbed()
-      .setTitle("**명령어 도움말**")
-      .setColor("#FFE4E4")
-      .setAuthor("MCBOT", "https://i.imgur.com/Togof5u.png")
-      .setThumbnail("https://i.imgur.com/Togof5u.png")
-      .setDescription('모든 명령어는 ' + prefix + ' 를 붙여 사용합니다.\n모든 음악과 검색 결과는 YouTube를 기준으로 사용됩니다!')
-      .addField("play", "```입력하신 곡(링크)의 재생을 시작합니다!\n사용법 : " + prefix + "play <곡|URL>```")
-      .addField("search", "```음악을 검색합니다!\n사용법 : " + prefix + "search <곡>```")
-      .addField("list", "```현재 재생중인 목록을 표시합니다!\n사용법 : " + prefix + "list```")
-      .addField("np", "```현재 재생중인 곡을 표시합니다.\n사용법 : " + prefix + "np```")
-      .addField("volume", "```음악의 볼륨을 설정 합니다!(0 ~ 10)\n사용법 : " + prefix + "volume\n기본값 : 5```")
-      .addField("stop", "```모든 곡을 중단시켜요!\n관리자 권한이 필요해요!\n사용법 : " + prefix + "stop```")
-      .setFooter(`Request by ${message.author.tag} • 문의 : MCHDF#9999\nYouTube API & ytdl`);
-      message.react('🔊');
-    return message.channel.send(embed);
-  }
 
   if(message.content.startsWith(prefix + 'mreload')) {
     if(message.author.id != '468781931182555136') {
