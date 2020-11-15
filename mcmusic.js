@@ -2,9 +2,30 @@ const Discord = require('discord.js');
 const bot = new Discord.Client();
 const ytdl = require('ytdl-core');
 const YouTube = require('simple-youtube-api');
-const prefix = '!'
+const fs = require('fs');
+bot.commands = new Discord.Collection();
+bot.aliases = new Discord.Collection();
 const youtube = new YouTube(process.env.YT_API_KEY);
 const queue = new Map();
+
+fs.readdir("./command/", (err, files) => {
+  if (err) console.log(err);
+
+  let jsfile = files.filter(f => f.split(".").pop() === "js")
+  if (jsfile.length <= 0) {
+    console.log("명령어를 찾지 못했어요...");
+    return;
+  }
+
+  jsfile.forEach((f, i) => {
+    let props = require(`./command/${f}`);
+    console.log(`[ ${f} ] load Complete`);
+    bot.commands.set(props.help.name, props);
+    props.help.aliases.forEach(alias => {
+      bot.aliases.set(alias, props.help.name)
+    })
+  });
+});
 
 bot.on('ready', () => {
   console.log(`${bot.user.username}의 음악 봇이 작동 중입니다!`);
@@ -14,6 +35,16 @@ bot.on('message', async message => {
   if (message.author.bot) {
     return;
   }
+
+  let prefixSet = JSON.parse(fs.readFileSync('./jsons/prefixSet.json', 'utf-8'));
+
+  if (!prefixSet[message.guild.id]) {
+    prefixSet[message.guild.id] = {
+      prefixSet: '!'
+    };
+  }
+
+  let prefix = prefixSet[message.guild.id].prefixSet;
 
   if (message.content.startsWith(prefix + "mhelp")) { // 음악 봇 명령어 도움말
     let embed = new Discord.MessageEmbed()
@@ -34,8 +65,9 @@ bot.on('message', async message => {
     });
     return message.author.send(embed);
   }
-
-  let args = message.content.substring(prefix.length).split(' ');
+  let messageArray = message.content.split(" ");
+  let cmd = messageArray[0];
+  let args = messageArray.slice(1);
   let serverQueue = queue.get(message.guild.id);
   let searchString = args.slice(1).join(' ');
   let url = args[1] ? args[1].replace(/<(.+)>/g, '$1') : '';
@@ -274,6 +306,12 @@ bot.on('message', async message => {
       process.exit();
     }
   }
+  if (!message.content.startsWith(prefix)) return;
+  let commandfile = bot.commands.get(cmd.slice(prefix.length)) || bot.commands.get(bot.aliases.get(cmd.slice(prefix.length)));
+  if (commandfile) {
+    commandfile.run(bot, message, args, prefix);
+  }
+
 });
 // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 function play(guild, song) {
