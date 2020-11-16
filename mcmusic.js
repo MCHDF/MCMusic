@@ -8,27 +8,10 @@ bot.aliases = new Discord.Collection();
 const youtube = new YouTube(process.env.YT_API_KEY);
 const queue = new Map();
 
-fs.readdir("./command/", (err, files) => {
-  if (err) console.log(err);
-
-  let jsfile = files.filter(f => f.split(".").pop() === "js")
-  if (jsfile.length <= 0) {
-    console.log("명령어를 찾지 못했어요...");
-    return;
-  }
-
-  jsfile.forEach((f, i) => {
-    let props = require(`./command/${f}`);
-    console.log(`[ ${f} ] load Complete`);
-    bot.commands.set(props.help.name, props);
-    props.help.aliases.forEach(alias => {
-      bot.aliases.set(alias, props.help.name)
-    })
-  });
-});
-
 bot.on('ready', () => {
-  console.log(`${bot.user.username}의 음악 봇이 작동 중입니다!`);
+  console.log(`┌────────────────────────────┐`);
+  console.log(`│ 봇 ${bot.user.username}이 작동 시작합니다!│`);
+  console.log(`└────────────────────────────┘`);
 });
 
 bot.on('message', async message => {
@@ -65,9 +48,8 @@ bot.on('message', async message => {
     });
     return message.author.send(embed);
   }
-  let messageArray = message.content.split(" ");
-  let cmd = messageArray[0];
-  let args = messageArray.slice(1);
+
+  let args = message.content.substring(prefix.length).split(' ');
   let serverQueue = queue.get(message.guild.id);
   let searchString = args.slice(1).join(' ');
   let url = args[1] ? args[1].replace(/<(.+)>/g, '$1') : '';
@@ -96,21 +78,21 @@ bot.on('message', async message => {
       try {
         var videos = await youtube.searchVideos(searchString, 5);
         var index = 0;
-        if(!searchString) {
+        if (!videos.map) {
           let embed = new Discord.MessageEmbed()
-          .setTitle(`:mag_right: \`${searchString}\` **검색 결과**`)
-          .setDescription('검색하신 음악을 찾을 수 없어요....');
-        return message.channel.send(embed);
+            .setTitle(`:mag_right: \`${searchString}\` **검색 결과**`)
+            .setDescription('검색하신 음악을 찾을 수 없어요....');
+          return message.channel.send(embed);
         }
         let embed = new Discord.MessageEmbed()
           .setTitle(`:mag_right: \`${searchString}\` **검색 결과**`)
-          .setDescription(`${videos.map(video2 => `\`${++index}\` **${video2.title}**`).join('\n')}\n\n:stopwatch: 재생할 곡의 번호를 전송해주세요!`)
-        message.channel.send(embed);
+          .setDescription(`${videos.map(video2 => `\`${++index}\` **${video2.title}**`).join('\n')}\n\n:stopwatch: 재생할 곡의 번호를 15초 안에 전송해주세요!`)
+        message.channel.send(embed).then(m => m.delete({ timeout: 15000 }));
         // message.channel.send(`:mag_right: \`${searchString}\` **검색 결과**\n${videos.map(video2 => `\`${++index}\` **${video2.title}**`).join('\n')}\n:stopwatch: 재생할 곡의 번호를 전송해주세요!`);
         try {
           var responce = await message.channel.awaitMessages(msg => msg.content > 0 && msg.content < 11, {
             max: 1,
-            time: 30000,
+            time: 15000,
             errors: ['time']
           })
         } catch {
@@ -292,8 +274,8 @@ bot.on('message', async message => {
       const volume = serverQueue.volume;
       const volumeLevel = "⬜".repeat(volume) + "⬛".repeat(10 - volume);
       let embed = new Discord.MessageEmbed()
-      .setTitle('**Volume**')
-      .setDescription(`🔈 ${volumeLevel} 🔊`)
+        .setTitle('**Volume**')
+        .setDescription(`🔈 ${volumeLevel} 🔊`)
       return message.channel.send(embed);
     }
   }
@@ -303,15 +285,50 @@ bot.on('message', async message => {
     if (message.author.id != '468781931182555136') {
       return;
     } else {
+      message.channel.send('리로딩...');
       process.exit();
     }
   }
-  if (!message.content.startsWith(prefix)) return;
-  let commandfile = bot.commands.get(cmd.slice(prefix.length)) || bot.commands.get(bot.aliases.get(cmd.slice(prefix.length)));
-  if (commandfile) {
-    commandfile.run(bot, message, args, prefix);
-  }
 
+  // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  if (message.content.startsWith(prefix + 'prefix')) {
+    if (!message.author.id === '468781931182555136') {
+      if (!message.member.hasPermission("ADMINISTRATOR")) {
+        return;
+      }
+    }
+    if (args[1] === '초기화') {
+      let prefixSet = JSON.parse(fs.readFileSync('./jsons/prefixSet.json', 'utf-8'));
+
+      prefixSet[message.guild.id] = {
+        prefixSet: '!'
+      };
+      fs.writeFile('./jsons/prefixSet.json', JSON.stringify(prefixSet), (err) => {
+        if (err) {
+          console.log(err);
+        } else {
+          return;
+        }
+      });
+    } else {
+      if (!args[1]) {
+        return;
+      }
+      let prefixSet = JSON.parse(fs.readFileSync('./jsons/prefixSet.json', 'utf-8'));
+
+      prefixSet[message.guild.id] = {
+        prefixSet: args[1]
+      };
+
+      fs.writeFile('./jsons/prefixSet.json', JSON.stringify(prefixSet), (err) => {
+        if (err) {
+          console.log(err);
+        } else {
+          return;
+        }
+      });
+    }
+  }
 });
 // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 function play(guild, song) {
