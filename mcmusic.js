@@ -3,10 +3,22 @@ const bot = new Discord.Client();
 const ytdl = require('ytdl-core');
 const YouTube = require('simple-youtube-api');
 const fs = require('fs');
-bot.commands = new Discord.Collection();
-bot.aliases = new Discord.Collection();
+const mysql = require('mysql');
 const youtube = new YouTube(process.env.YT_API_KEY);
 const queue = new Map();
+const log = require('./config/logger.js')
+
+var con = mysql.createConnection({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASS,
+  database: process.env.DB_NAME
+});
+
+con.connect(err => {
+  if (err) throw err;
+  console.log('데이터베이스 연결 완료!');
+});
 
 bot.on('ready', () => {
   console.log(`┌────────────────────────────┐`);
@@ -29,12 +41,22 @@ bot.on('message', async message => {
 
   let prefix = prefixSet[message.guild.id].prefixSet;
 
+  //   con.query(`SELECT musicCh FROM Guilds WHERE guildId = '${message.guild.id}'`, (err, rows) => {
+  //       if(err) throw(err);
+  //       let musicCh = rows[0].musicCh;
+  //       if(message.channel.id != musicCh) {
+  //         return message.channel.send(`🛑 음악은 <#${musicCh}> 에서 이용해주세요!`);
+  //       } else {
+  //           return;
+  //       }
+  //   })
+
   if (message.content.startsWith(prefix + "mhelp")) { // 음악 봇 명령어 도움말
     let embed = new Discord.MessageEmbed()
       .setTitle("**명령어 도움말**")
       .setColor("#FFE4E4")
-      .setAuthor("MCBOT", "https://i.imgur.com/Togof5u.png")
-      .setThumbnail("https://i.imgur.com/Togof5u.png")
+      .setAuthor("MCBOT", bot.user.displayAvatarURL())
+      .setThumbnail(bot.user.displayAvatarURL())
       .setDescription('모든 명령어는 ' + prefix + ' 를 붙여 사용합니다.\n모든 음악과 검색 결과는 YouTube를 기준으로 사용됩니다!')
       .addField("play", "```입력하신 곡(링크)의 재생을 시작합니다!\n사용법 : " + prefix + "play <곡|URL>```")
       .addField("search", "```음악을 검색합니다!\n사용법 : " + prefix + "search <곡>```")
@@ -131,8 +153,9 @@ bot.on('message', async message => {
         queueConst.connection = connection;
         play(message.guild, queueConst.songs[0]);
         message.channel.send(`:arrow_forward: \`\`${mmss(song.length)}\`\` **${song.title}** 의 재생을 시작합니다!`)
+        log.info(`Play Music '${mmss(song.length)} - ${song.title}' on ${message.guild.name}`)
       } catch (error) {
-        console.log(`:no_entry_sign: 음성 채널에 입장하는데 문제가 생겼어요! 오류 내용을 개발자에게 알려주세요!\n오류 내용 \`${error}\``);
+        log.error(`${message.guild.name} ERROR : ${error}`)
         queue.delete(message.guild.id);
         return message.channel.send(`:no_entry_sign: 음성 채널에 입장하는데 문제가 생겼어요! 오류 내용을 개발자에게 알려주세요!\n오류 내용 \`${error}\``);
       }
@@ -197,8 +220,9 @@ bot.on('message', async message => {
         queueConst.connection = connection;
         play(message.guild, queueConst.songs[0]);
         message.channel.send(`:arrow_forward: \`\`${mmss(song.length)}\`\` \`${song.title}\`의 재생을 시작합니다!`)
+        log.info(`Play Music '${mmss(song.length)} - ${song.title}' on ${message.guild.name}`)
       } catch (error) {
-        console.log(`음악봇에 오류가 생겼어요!\n오류 내용 \`${error}\``);
+        log.error(`${message.guild.name} ERROR : ${error}`)
         queue.delete(message.guild.id);
         return message.channel.send(`:no_entry_sign: 음성 채널에 입장하는데 문제가 생겼어요! 오류 내용을 개발자에게 알려주세요!\n오류 내용 \`${error}\``);
       }
