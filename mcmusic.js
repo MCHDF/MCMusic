@@ -41,16 +41,6 @@ bot.on('message', async message => {
 
   let prefix = prefixSet[message.guild.id].prefixSet;
 
-  //   con.query(`SELECT musicCh FROM Guilds WHERE guildId = '${message.guild.id}'`, (err, rows) => {
-  //       if(err) throw(err);
-  //       let musicCh = rows[0].musicCh;
-  //       if(message.channel.id != musicCh) {
-  //         return message.channel.send(`🛑 음악은 <#${musicCh}> 에서 이용해주세요!`);
-  //       } else {
-  //           return;
-  //       }
-  //   })
-
   if (message.content.startsWith(prefix + "mhelp")) { // 음악 봇 명령어 도움말
     let embed = new Discord.MessageEmbed()
       .setTitle("**명령어 도움말**")
