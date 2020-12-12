@@ -8,7 +8,7 @@ const youtube = new YouTube(process.env.YT_API_KEY);
 const queue = new Map();
 const log = require('./config/logger.js')
 
-var con = mysql.createConnection({
+const con = mysql.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASS,
@@ -53,7 +53,11 @@ bot.on('message', async message => {
       .addField("list", "```현재 재생중인 목록을 표시합니다!\n사용법 : " + prefix + "list```")
       .addField("np", "```현재 재생중인 곡을 표시합니다.\n사용법 : " + prefix + "np```")
       .addField("volume", "```음악의 볼륨을 설정 합니다!(0 ~ 10)\n사용법 : " + prefix + "volume\n기본값 : 5```")
-      .addField("stop", "```모든 곡을 중단시켜요!\n관리자 권한이 필요해요!\n사용법 : " + prefix + "stop```")
+      if(message.member.hasPermission("ADMINISTRATOR")) {
+        embed
+        .addField("stop", "```모든 곡을 중단시켜요!\n관리자 권한이 필요해요!\n사용법 : " + prefix + "stop```")
+      }
+      embed
       .setFooter(`Request by ${message.author.tag} • 문의 : MCHDF#9999\nYouTube API & ytdl`);
     message.fetch(message.id).then(m => {
       m.react("🎵");
@@ -132,7 +136,8 @@ bot.on('message', async message => {
         connection: null,
         songs: [],
         volume: 3,
-        playing: true
+        playing: true,
+        skipVote: []
       }
       queue.set(message.guild.id, queueConst);
 
@@ -143,16 +148,16 @@ bot.on('message', async message => {
         queueConst.connection = connection;
         play(message.guild, queueConst.songs[0]);
         message.channel.send(`:arrow_forward: \`\`${mmss(song.length)}\`\` **${song.title}** 의 재생을 시작합니다!`)
-        log.info(`Play Music '${mmss(song.length)} - ${song.title}' on ${message.guild.name}`)
+        log.info(`${message.author.username} has Play Music '${mmss(song.length)} - ${song.title}' on ${message.guild.name}`);
       } catch (error) {
-        log.error(`${message.guild.name} ERROR : ${error}`)
+        log.error(`${message.guild.name} ERROR : ${error}`);
         queue.delete(message.guild.id);
         return message.channel.send(`:no_entry_sign: 음성 채널에 입장하는데 문제가 생겼어요! 오류 내용을 개발자에게 알려주세요!\n오류 내용 \`${error}\``);
       }
 
     } else {
       serverQueue.songs.push(song);
-      return message.channel.send(`:notepad_spiral: \`\`${mmss(song.length)}\`\` \`${song.title}\`이(가) 재생목록에 추가되었습니다!`);
+      return message.channel.send(`:notepad_spiral: \`\`${mmss(song.length)}\`\` **${song.title}** 이(가) 재생목록에 추가되었습니다!`);
     }
     return undefined;
     // ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -199,7 +204,8 @@ bot.on('message', async message => {
         connection: null,
         songs: [],
         volume: 3,
-        playing: true
+        playing: true,
+        skipVote: []
       }
       queue.set(message.guild.id, queueConst);
 
@@ -209,8 +215,8 @@ bot.on('message', async message => {
         var connection = await voiceChannel.join();
         queueConst.connection = connection;
         play(message.guild, queueConst.songs[0]);
-        message.channel.send(`:arrow_forward: \`\`${mmss(song.length)}\`\` \`${song.title}\`의 재생을 시작합니다!`)
-        log.info(`Play Music '${mmss(song.length)} - ${song.title}' on ${message.guild.name}`)
+        message.channel.send(`:arrow_forward: \`\`${mmss(song.length)}\`\` **${song.title}** 의 재생을 시작합니다!`)
+        log.info(`${message.author.username} has Play Music '${mmss(song.length)} - ${song.title}' on ${message.guild.name}`)
       } catch (error) {
         log.error(`${message.guild.name} ERROR : ${error}`)
         queue.delete(message.guild.id);
@@ -219,7 +225,7 @@ bot.on('message', async message => {
 
     } else {
       serverQueue.songs.push(song);
-      return message.channel.send(`:notepad_spiral: \`\`${mmss(song.length)}\`\` \`${song.title}\`이(가) 재생목록에 추가되었습니다!`);
+      return message.channel.send(`:notepad_spiral: \`\`${mmss(song.length)}\`\` **${song.title}** 이(가) 재생목록에 추가되었습니다!`);
     }
     return undefined;
     // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -237,6 +243,17 @@ bot.on('message', async message => {
     serverQueue.connection.dispatcher.end();
     return message.channel.send(':stop_button: **모든 음악을 중지합니다!**');
     // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  } else if (message.content.startsWith(`${prefix}forceskip`)) { // 곡 포스 스킵 명령어
+    if (!message.member.hasPermission(["ADMINISTRATOR"])) {
+      return message.reply(":x: 음악을 강제 스킵할 권한이 없어요!").then(m => m.delete({ timeout: 3000 }));
+    }
+    if (!serverQueue) {
+      return message.channel.send(':mute: 저는 지금 어떠한 노래도 부르고 있지않아요...');
+    }
+
+    serverQueue.connection.dispatcher.end();
+    return message.channel.send(`:track_next: **재생중인 음악을 건너뛰었어요!**`);
+    // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
   } else if (message.content.startsWith(`${prefix}skip`)) { // 곡 스킵 명령어
     if (!serverQueue) {
       return message.channel.send(':mute: 저는 지금 어떠한 노래도 부르고 있지않아요...');
@@ -244,8 +261,22 @@ bot.on('message', async message => {
     if (!message.member.voice.channel) {
       return message.channel.send(':no_entry_sign: 음악을 건너뛰기 위해서 음악이 재생되고있는 채널에 접속해주세요!');
     }
-    serverQueue.connection.dispatcher.end();
-    return message.channel.send(`:track_next: **재생중인 음악을 건너뛰었어요!**`);
+
+    let usersC = message.member.voice.channel.members.size;
+    let required = Math.ceil(usersC/2);
+
+    if(serverQueue.skipVote.includes(message.member.id)) {
+      return message.channel.send(':bookmark_tabs: 이미 투표하셨어요!');
+    }
+
+    serverQueue.skipVote.push(message.member.id);
+    message.channel.send(`:white_check_mark: 투표 완료! \`${serverQueue.skipVote.length}/${required}\``);
+
+    if(serverQueue.skipVote.length >= required) {
+      serverQueue.connection.dispatcher.end();
+      serverQueue.skipVote = [];
+      return message.channel.send(`:track_next: **재생중인 음악을 건너뛰었어요!**`);
+    }
     // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
   } else if (message.content.startsWith(`${prefix}list`)) { // 곡 리스트 명령어
     if (!serverQueue) {
@@ -368,7 +399,17 @@ function mmss(i) {
   var hour = Math.floor(i / 3600);
   var min = Math.floor((i - (hour * 3600)) / 60);
   var sec = i - (hour * 3600) - (min * 60);
-  return `${min}:${(sec < 10) ? "0" + sec : sec}`;
+  if (hour === 0) {
+    hour = '';
+  } else {
+    hour = `${hour}:`
+  }
+  if (min === 0) {
+    min = '00:';
+  } else {
+    min = `${min}:`
+  }
+  return `${hour}${min}${(sec < 10) ? "0" + sec : sec}`;
 }
 
 bot.login(process.env.MCBOT_TOKEN);
