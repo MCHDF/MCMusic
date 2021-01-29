@@ -42,6 +42,9 @@ bot.on('message', async message => {
     let prefix = prefixSet[message.guild.id].prefixSet;
 
     if (message.content.startsWith(prefix + "mhelp")) { // 음악 봇 명령어 도움말
+        if (message.guild.id == "534586842079821824" && message.channel.id != "702423363976429639") {
+            return message.channel.send(":no_entry_sign: 음악은 음악 채널에서만 사용해주세요!");
+        }
         let embed = new Discord.MessageEmbed()
             .setTitle("**명령어 도움말**")
             .setColor("#FFE4E4")
@@ -72,6 +75,9 @@ bot.on('message', async message => {
 
     // ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     if (message.content.startsWith(`${prefix}search`)) { // 검색 명령어
+        if (message.guild.id == "534586842079821824" && message.channel.id != "702423363976429639") {
+            return message.channel.send(":no_entry_sign: 음악은 음악 채널에서만 사용해주세요!");
+        }
         if (!args[1]) {
             return message.channel.send(':mag_right: **검색할 곡의 제목을 입력해주세요!**')
                 .catch(console.error);
@@ -79,7 +85,7 @@ bot.on('message', async message => {
         const voiceChannel = message.member.voice.channel;
         if (!voiceChannel) {
             return message.channel.send(":loud_sound: **음악을 재생하기 위해선, 음성 채널에 접속 하셔야해요!**");
-        }
+        } 
         const permissions = voiceChannel.permissionsFor(message.client.user);
         if (!permissions.has('CONNECT')) {
             return message.channel.send(":no_entry_sign: 저에게 음성 채널에 접근할 수 있는 권한이 없어요!");
@@ -162,6 +168,9 @@ bot.on('message', async message => {
         return undefined;
         // ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     } else if (message.content.startsWith(`${prefix}play`)) { //바로 플레이 명령어
+        if (message.guild.id == "534586842079821824" && message.channel.id != "702423363976429639") {
+            return message.channel.send(":no_entry_sign: 음악은 음악 채널에서만 사용해주세요!");
+        }
         if (!args[1]) {
             return message.channel.send(':mag_right: **재생할 곡의 이름을 입력해주세요!**')
                 .catch(console.error);
@@ -230,6 +239,9 @@ bot.on('message', async message => {
         return undefined;
         // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     } else if (message.content.startsWith(`${prefix}stop`)) { //재생 중단 명령어
+        if (message.guild.id == "534586842079821824" && message.channel.id != "702423363976429639") {
+            return message.channel.send(":no_entry_sign: 음악은 음악 채널에서만 사용해주세요!");
+        }
         if (!message.member.hasPermission(["ADMINISTRATOR"])) {
             return message.reply(":x: 음악을 중단할 권한이 없어요!").then(m => m.delete({ timeout: 3000 }));
         }
@@ -244,6 +256,9 @@ bot.on('message', async message => {
         return message.channel.send(':stop_button: **모든 음악을 중지합니다!**');
         // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     } else if (message.content.startsWith(`${prefix}forceskip`)) { // 곡 포스 스킵 명령어
+        if (message.guild.id == "534586842079821824" && message.channel.id != "702423363976429639") {
+            return message.channel.send(":no_entry_sign: 음악은 음악 채널에서만 사용해주세요!");
+        }
         if (!message.member.hasPermission(["ADMINISTRATOR"])) {
             return message.reply(":x: 음악을 강제 스킵할 권한이 없어요!").then(m => m.delete({ timeout: 3000 }));
         }
@@ -255,6 +270,9 @@ bot.on('message', async message => {
         return message.channel.send(`:track_next: **재생중인 음악을 건너뛰었어요!**`);
         // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     } else if (message.content.startsWith(`${prefix}skip`)) { // 곡 스킵 명령어
+        if (message.guild.id == "534586842079821824" && message.channel.id != "702423363976429639") {
+            return message.channel.send(":no_entry_sign: 음악은 음악 채널에서만 사용해주세요!");
+        }
         if (!serverQueue) {
             return message.channel.send(':mute: 저는 지금 어떠한 노래도 부르고 있지않아요...');
         }
@@ -279,6 +297,9 @@ bot.on('message', async message => {
         }
         // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     } else if (message.content.startsWith(`${prefix}list`)) { // 곡 리스트 명령어
+        if (message.guild.id == "534586842079821824" && message.channel.id != "702423363976429639") {
+            return message.channel.send(":no_entry_sign: 음악은 음악 채널에서만 사용해주세요!");
+        }
         if (!serverQueue) {
             return message.channel.send(':bulb: 재생목록에 제가 부를 노래가 없는것 같아요...');
         }
@@ -290,6 +311,9 @@ bot.on('message', async message => {
         return undefined;
         // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     } else if (message.content.startsWith(prefix + 'np')) { // 현재 재생중인 곡 표시 명령어
+        if (message.guild.id == "534586842079821824" && message.channel.id != "702423363976429639") {
+            return message.channel.send(":no_entry_sign: 음악은 음악 채널에서만 사용해주세요!");
+        }
         if (!serverQueue) {
             return message.channel.send(':mute: 저는 지금 어떠한 노래도 부르고 있지않아요...');
         }
@@ -297,6 +321,9 @@ bot.on('message', async message => {
         return undefined;
         // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     } else if (message.content.startsWith(prefix + "volume")) { // 볼륨 조절 명령어
+        if (message.guild.id == "534586842079821824" && message.channel.id != "702423363976429639") {
+            return message.channel.send(":no_entry_sign: 음악은 음악 채널에서만 사용해주세요!");
+        }
         if (!serverQueue) {
             return message.channel.send(':mute: 저는 지금 어떠한 노래도 부르고 있지않아요...');
         }
