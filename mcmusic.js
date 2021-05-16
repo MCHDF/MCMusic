@@ -7,6 +7,7 @@ const mysql = require('mysql');
 const youtube = new YouTube(process.env.YT_API_KEY);
 const queue = new Map();
 const log = require('./config/logger.js')
+const validUrl = require('valid-url');
 
 const con = mysql.createConnection({
     host: process.env.DB_HOST,
@@ -40,10 +41,11 @@ bot.on('message', async message => {
     }
 
     let prefix = prefixSet[message.guild.id].prefixSet;
+    let zbc = message.guild.id == "534586842079821824" && message.channel.id != "702423363976429639";
 
     if (message.content.startsWith(prefix + "mhelp")) { // 음악 봇 명령어 도움말
-        if (message.guild.id == "534586842079821824" && message.channel.id != "702423363976429639") {
-            return message.channel.send(":no_entry_sign: 음악은 음악 채널에서만 사용해주세요!");
+        if (zbc) {
+            return message.channel.send(":no_entry_sign: 음악은 <#702423363976429639> 채널에서만 사용해주세요!");
         }
         let embed = new Discord.MessageEmbed()
             .setTitle("**명령어 도움말**")
@@ -62,10 +64,7 @@ bot.on('message', async message => {
         }
         embed
             .setFooter(`Request by ${message.author.tag} • 문의 : MCHDF#9999\nYouTube API & ytdl`);
-        message.fetch(message.id).then(m => {
-            m.react("🎵");
-        });
-        return message.author.send(embed);
+        return message.channel.send(embed);
     }
 
     let args = message.content.substring(prefix.length).split(' ');
@@ -108,17 +107,18 @@ bot.on('message', async message => {
                 }
                 let embed = new Discord.MessageEmbed()
                     .setTitle(`:mag_right: \`${searchString}\` **검색 결과**`)
+                    .setColor("AQUA")
                     .setDescription(`${videos.map(video2 => `\`${++index}\` **${video2.title}**`).join('\n')}\n\n:stopwatch: 재생할 곡의 번호를 15초 안에 전송해주세요!`)
-                message.channel.send(embed).then(m => m.delete({ timeout: 15000 }));
+                var msg = await message.channel.send(embed);
                 // message.channel.send(`:mag_right: \`${searchString}\` **검색 결과**\n${videos.map(video2 => `\`${++index}\` **${video2.title}**`).join('\n')}\n:stopwatch: 재생할 곡의 번호를 전송해주세요!`);
                 try {
                     var responce = await message.channel.awaitMessages(msg => msg.content > 0 && msg.content < 11, {
                         max: 1,
-                        time: 15000,
+                        time: 30000,
                         errors: ['time']
-                    })
+                    });
                 } catch {
-                    return message.channel.send(':stopwatch: **시간 초과!**').then(m => m.delete({ timeout: 3000 }));
+                    return msg.edit(':stopwatch: **시간 초과!**').then(m => m.delete({ timeout: 3000 }));
                 }
                 const videoIndex = parseInt(responce.first().content);
                 var video = await youtube.getVideoByID(videos[videoIndex - 1].id)
@@ -132,7 +132,7 @@ bot.on('message', async message => {
             title: video.title,
             url: `https://www.youtube.com/watch?v=${video.id}`,
             length: video.durationSeconds,
-            addUser: message.author.username
+            addUser: message.author.id
         };
 
         if (!serverQueue) {
@@ -141,7 +141,7 @@ bot.on('message', async message => {
                 voiceChannel: voiceChannel,
                 connection: null,
                 songs: [],
-                volume: 3,
+                volume: 5,
                 playing: true,
                 skipVote: []
             }
@@ -153,6 +153,7 @@ bot.on('message', async message => {
                 var connection = await voiceChannel.join();
                 queueConst.connection = connection;
                 play(message.guild, queueConst.songs[0]);
+                msg.delete()
                 message.channel.send(`:arrow_forward: \`\`${mmss(song.length)}\`\` **${song.title}** 의 재생을 시작합니다!`)
                 log.info(`${message.author.username} has Play Music '${mmss(song.length)} - ${song.title}' on ${message.guild.name}`);
             } catch (error) {
@@ -198,12 +199,20 @@ bot.on('message', async message => {
             }
         }
 
+        let musicUrl;
+
+        if(validUrl.isUri(args[0])) {
+            musicUrl = args[0];
+        } else {
+            musicUrl = `https://www.youtube.com/watch?v=${video.id}`
+        }
+
         const song = {
             id: video.id,
             title: video.title,
-            url: `https://www.youtube.com/watch?v=${video.id}`,
+            url: musicUrl,
             length: video.durationSeconds,
-            addUser: message.author.username
+            addUser: message.author.id
         };
 
         if (!serverQueue) {
@@ -212,7 +221,7 @@ bot.on('message', async message => {
                 voiceChannel: voiceChannel,
                 connection: null,
                 songs: [],
-                volume: 3,
+                volume: 5,
                 playing: true,
                 skipVote: []
             }
@@ -267,6 +276,7 @@ bot.on('message', async message => {
         }
 
         serverQueue.connection.dispatcher.end();
+        serverQueue.skipVote = [];
         return message.channel.send(`:track_next: **재생중인 음악을 건너뛰었어요!**`);
         // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     } else if (message.content.startsWith(`${prefix}skip`)) { // 곡 스킵 명령어
@@ -306,7 +316,8 @@ bot.on('message', async message => {
         let index = 0;
         let embed = new Discord.MessageEmbed()
             .setTitle(`:notepad_spiral: __**재생목록**__`)
-            .setDescription(`${serverQueue.songs.map(song => `**${++index}** \`\`${mmss(song.length)}\`\` ${song.title} **${song.addUser}**`).join('\n')}`)
+            .setColor("AQUA")
+            .setDescription(`${serverQueue.songs.map(song => `**${++index}** \`\`${mmss(song.length)}\`\` ${song.title} <@${song.addUser}>`).join('\n')}`)
         message.channel.send(embed);
         return undefined;
         // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -317,8 +328,11 @@ bot.on('message', async message => {
         if (!serverQueue) {
             return message.channel.send(':mute: 저는 지금 어떠한 노래도 부르고 있지않아요...');
         }
-        message.channel.send(`:arrow_forward: **재생 중**\n${serverQueue.songs[0].title} \`${mmss(serverQueue.songs[0].length)}\` **${serverQueue.songs[0].addUser}**`);
-        return undefined;
+        let embed = new Discord.MessageEmbed()
+        .setTitle("Now Playing...")
+        .setColor("AQUA")
+        .setDescription(`\`${mmss(serverQueue.songs[0].length)}\` ${serverQueue.songs[0].title} <@${serverQueue.songs[0].addUser}>`)
+        return message.channel.send(embed);
         // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     } else if (message.content.startsWith(prefix + "volume")) { // 볼륨 조절 명령어
         if (message.guild.id == "534586842079821824" && message.channel.id != "702423363976429639") {
@@ -335,6 +349,7 @@ bot.on('message', async message => {
             const volumeLevel = "⬜".repeat(volume) + "⬛".repeat(10 - volume);
             let embed = new Discord.MessageEmbed()
                 .setTitle('**Volume**')
+                .setColor("AQUA")
                 .setDescription(`🔈 ${volumeLevel} 🔊`)
             return message.channel.send(embed);
         }
@@ -347,6 +362,7 @@ bot.on('message', async message => {
             const volumeLevel = "⬜".repeat(volume) + "⬛".repeat(10 - volume);
             let embed = new Discord.MessageEmbed()
                 .setTitle('**Volume**')
+                .setColor("AQUA")
                 .setDescription(`🔈 ${volumeLevel} 🔊`)
             return message.channel.send(embed);
         }
@@ -364,7 +380,7 @@ bot.on('message', async message => {
 
     // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     if (message.content.startsWith(prefix + 'prefix')) {
-        if (!message.author.id === '468781931182555136') {
+        if (message.author.id != '468781931182555136') {
             if (!message.member.hasPermission("ADMINISTRATOR")) {
                 return;
             }

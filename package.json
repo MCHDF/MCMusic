@@ -10,11 +10,11 @@
     "mysql": "^2.18.1",
     "opusscript": "0.0.7",
     "simple-youtube-api": "^5.2.1",
+    "valid-url": "^1.0.9",
     "winston": "^3.3.3",
     "winston-daily-rotate-file": "^4.5.0",
     "ytdl-core": "^4.1.4"
   },
-  "devDependencies": {},
   "scripts": {
     "test": "node mcmusic.js"
   },
